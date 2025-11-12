@@ -7,7 +7,7 @@ const morgan = require("morgan");
 // Impor router
 const presensiRoutes = require("./routes/presensi");
 const reportRoutes = require("./routes/reports");
-const reportRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth');
 
 // Middleware
 app.use(cors());
