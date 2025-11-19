@@ -1,25 +1,22 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import LoginPage from './components/LoginPage';
-import RegisterPage from './components/RegisterPage';
-import DashboardPage from './components/DashboardPage';
-import PresensiPage from './components/PresensiPage';   // <--- TAMBAHKAN
-import ReportPage from './components/ReportPage';       // <--- OPTIONAL (nanti)
- 
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LoginPage from "./components/LoginPage";
+import RegisterPage from "./components/RegisterPage";
+import Dashboard from "./components/Dashboard";
+import PresensiPage from "./components/PresensiPage";
+import ReportPage from "./components/ReportPage";
+
 function App() {
   return (
-    <Router>
-
+    <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/presensi" element={<PresensiPage />} />
         <Route path="/report" element={<ReportPage />} />
-        <Route path="/" element={<LoginPage />} />
       </Routes>
-
-    </Router>
+    </BrowserRouter>
   );
 }
 
