@@ -4,18 +4,16 @@ import { useNavigate } from "react-router-dom";
 
 export default function PresensiPage() {
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const nav = useNavigate();
 
   const handleCheckIn = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      nav("/login");
-      return;
-    }
+    if (!token) return nav("/login");
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/presensi/checkin",
+        "http://localhost:3000/api/presensi/check-in",
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -23,23 +21,20 @@ export default function PresensiPage() {
       );
 
       setMessage(res.data.message || "Check-in berhasil!");
+      setError("");
     } catch (err) {
-      setMessage(
-        err.response ? err.response.data.message : "Gagal check-in"
-      );
+      setMessage("");
+      setError(err.response?.data?.message || "Gagal check-in");
     }
   };
 
   const handleCheckOut = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      nav("/login");
-      return;
-    }
+    if (!token) return nav("/login");
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/presensi/checkout",
+        "http://localhost:3000/api/presensi/check-out",
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -47,10 +42,10 @@ export default function PresensiPage() {
       );
 
       setMessage(res.data.message || "Check-out berhasil!");
+      setError("");
     } catch (err) {
-      setMessage(
-        err.response ? err.response.data.message : "Gagal check-out"
-      );
+      setMessage("");
+      setError(err.response?.data?.message || "Gagal check-out");
     }
   };
 
@@ -68,7 +63,8 @@ export default function PresensiPage() {
         </button>
       </div>
 
-      {message && <p style={styles.message}>{message}</p>}
+      {message && <p style={styles.success}>{message}</p>}
+      {error && <p style={styles.error}>{error}</p>}
     </div>
   );
 }
@@ -84,5 +80,6 @@ const styles = {
     cursor: "pointer",
     borderRadius: 10,
   },
-  message: { marginTop: 30, fontSize: 18 },
+  success: { marginTop: 30, fontSize: 18, color: "green" },
+  error: { marginTop: 30, fontSize: 18, color: "red" },
 };
