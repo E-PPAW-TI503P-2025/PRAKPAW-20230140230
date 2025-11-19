@@ -9,55 +9,46 @@ function PresensiPage() {
 
   const token = localStorage.getItem("token");
 
-  // Jika token tidak ada → balik ke login
   if (!token) {
     navigate("/login");
+    return null;
   }
 
   const axiosConfig = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   };
 
   const handleCheckIn = async () => {
-    setError("");
-    setMessage("");
-
     try {
       const res = await axios.post(
         "http://localhost:3001/api/presensi/check-in",
         {},
         axiosConfig
       );
-
-      setMessage(res.data.message || "Check-In berhasil!");
+      setMessage(res.data.message);
+      setError("");
     } catch (err) {
-      setError(err.response?.data?.message || "Check-In gagal!");
+      setError(err.response?.data?.message || "Gagal Check-In");
     }
   };
 
   const handleCheckOut = async () => {
-    setError("");
-    setMessage("");
-
     try {
       const res = await axios.post(
         "http://localhost:3001/api/presensi/check-out",
         {},
         axiosConfig
       );
-
-      setMessage(res.data.message || "Check-Out berhasil!");
+      setMessage(res.data.message);
+      setError("");
     } catch (err) {
-      setError(err.response?.data?.message || "Check-Out gagal!");
+      setError(err.response?.data?.message || "Gagal Check-Out");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-
         <h2 className="text-3xl font-bold mb-6 text-gray-800">
           Lakukan Presensi
         </h2>
@@ -68,25 +59,18 @@ function PresensiPage() {
         <div className="flex space-x-4">
           <button
             onClick={handleCheckIn}
-            className="w-full py-3 px-4 bg-green-600 text-white font-semibold rounded-md shadow-sm hover:bg-green-700"
+            className="w-full py-3 px-4 bg-green-600 text-white rounded-md"
           >
             Check-In
           </button>
 
           <button
             onClick={handleCheckOut}
-            className="w-full py-3 px-4 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700"
+            className="w-full py-3 px-4 bg-red-600 text-white rounded-md"
           >
             Check-Out
           </button>
         </div>
-
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="mt-6 w-full py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-        >
-          Kembali ke Dashboard
-        </button>
       </div>
     </div>
   );
