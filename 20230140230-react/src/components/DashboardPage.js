@@ -1,52 +1,36 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Dashboard() {
-  const nav = useNavigate();
+export default function DashboardPage() {
+  const navigate = useNavigate();
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Dashboard</h1>
+    <div className="min-h-screen bg-blue flex items-center justify-center p-10">
 
-      <div style={styles.buttonContainer}>
+      <div className="bg-white/30 backdrop-blur-xl p-10 rounded-3xl border border-white/40 shadow-2xl text-center max-w-xl">
+
+        <h1 className="text-5xl font-extrabold text-black drop-shadow-lg mb-4 animate-bounce">
+         Selamat Datang! 
+        </h1>
+
+        <p className="text-white text-lg mb-10">
+          ANDA BERHASIL MASUK KE DASHBOARD
+        </p>
+
         <button
-          style={styles.button}
-          onClick={() => nav("/presensi")}
+          onClick={logout}
+          className="px-8 py-3 bg-white text-red-600 font-bold rounded-xl shadow-lg hover:bg-red-100 transition"
         >
-          Presensi
+          Logout
         </button>
 
-        <button
-          style={styles.button}
-          onClick={() => nav("/report")}
-        >
-          Report
-        </button>
       </div>
+
     </div>
   );
 }
-
-const styles = {
-  container: {
-    textAlign: "center",
-    marginTop: 80,
-  },
-  title: {
-    fontSize: 32,
-    marginBottom: 40,
-  },
-  buttonContainer: {
-    display: "flex",
-    justifyContent: "center",
-    gap: 20,
-  },
-  button: {
-    width: 250,
-    height: 120,
-    fontSize: 24,
-    cursor: "pointer",
-    borderRadius: 10,
-    border: "2px solid #333"
-  },
-};

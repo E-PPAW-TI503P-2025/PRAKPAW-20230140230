@@ -1,120 +1,99 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-function ReportPage() {
-  const [reports, setReports] = useState([]);
+export default function RegisterPage() {
+  const [nama, setNama] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('mahasiswa');
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const fetchReports = async (query = "") => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  const navigate = useNavigate();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError(null);
 
     try {
-      const res = await axios.get(
-        `http://localhost:3000/api/reports/daily${query}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await axios.post('http://localhost:3001/api/auth/register', {
+        nama, email, password, role
+      });
 
-      setReports(res.data);
-      setError(null);
+      alert('Registrasi berhasil!');
+      navigate('/login');
     } catch (err) {
-      setReports([]);
-      setError(
-        err.response ? err.response.data.message : "Gagal mengambil data"
-      );
+      setError(err.response ? err.response.data.message : 'Registrasi gagal');
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const q = searchTerm ? `?nama=${searchTerm}` : "";
-    fetchReports(q);
-  };
-
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
   return (
-    <div className="max-w-6xl mx-auto p-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Laporan Presensi Harian
-      </h1>
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="bg-black/20 backdrop-blur-xl p-10 rounded-2xl shadow-2xl border border-white/30 max-w-md w-full">
 
-      <form onSubmit={handleSearchSubmit} className="mb-6 flex space-x-2">
-        <input
-          type="text"
-          placeholder="Cari berdasarkan nama..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-        />
-        <button
-          type="submit"
-          className="py-2 px-4 bg-blue-600 text-white font-semibold rounded-md"
-        >
-          Cari
-        </button>
-      </form>
+        <h1 className="text-4xl font-extrabold text-black text-center mb-8 tracking-wide">
+          Register
+        </h1>
 
-      {error && (
-        <p className="text-red-600 bg-red-100 p-4 rounded-md mb-4">{error}</p>
-      )}
+        <form onSubmit={handleRegister} className="space-y-6">
 
-      {!error && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-In
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-Out
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {reports.length > 0 ? (
-                reports.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {p.user ? p.user.nama : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(p.checkIn).toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {p.checkOut
-                        ? new Date(p.checkOut).toLocaleString("id-ID")
-                        : "Belum Check-Out"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" className="px-6 py-4 text-center text-gray-500">
-                    Tidak ada data.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+          <div>
+            <label className="text-black font-semibold">Nama</label>
+            <input
+              type="text"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
+              value={nama}
+              onChange={(e) => setNama(e.target.value)}
+              placeholder="Masukkan nama..."
+            />
+          </div>
+
+          <div>
+            <label className="text-black font-semibold">Email</label>
+            <input
+              type="email"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Masukkan email..."
+            />
+          </div>
+
+          <div>
+            <label className="text-black font-semibold">Password</label>
+            <input
+              type="password"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Masukkan password..."
+            />
+          </div>
+
+          <div>
+            <label className="text-black font-semibold">Role</label>
+            <select
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black focus:ring-2 focus:ring-white"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="mahasiswa" className="text-white">Mahasiswa</option>
+              <option value="admin" className="text-white">Admin</option>
+            </select>
+          </div>
+
+          {error && <p className="text-red-200 text-center">{error}</p>}
+
+          <button className="w-full py-3 bg-white text-white-700 font-bold rounded-xl shadow-lg hover:bg-white-100 transition">
+            Register
+          </button>
+        </form>
+
+        <p className="text-center text-black mt-6">
+          Sudah punya akun? <a href="/login" className="underline">Login</a>
+        </p>
+
+      </div>
     </div>
   );
 }
-
-export default ReportPage;

@@ -28,20 +28,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-pink-500 flex items-center justify-center p-6">
-      <div className="bg-white/20 backdrop-blur-xl p-10 rounded-2xl shadow-2xl border border-white/30 max-w-md w-full">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="bg-black/20 backdrop-blur-xl p-10 rounded-2xl shadow-2xl border border-white/30 max-w-md w-full">
 
-        <h1 className="text-4xl font-extrabold text-white text-center mb-8 tracking-wide">
+        <h1 className="text-4xl font-extrabold text-black text-center mb-8 tracking-wide">
           Register
         </h1>
 
         <form onSubmit={handleRegister} className="space-y-6">
 
           <div>
-            <label className="text-white font-semibold">Nama</label>
+            <label className="text-black font-semibold">Nama</label>
             <input
               type="text"
-              className="w-full mt-2 p-3 rounded-lg bg-white/30 text-white placeholder-white/80 focus:ring-2 focus:ring-white"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               placeholder="Masukkan nama..."
@@ -49,10 +49,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="text-white font-semibold">Email</label>
+            <label className="text-black font-semibold">Email</label>
             <input
               type="email"
-              className="w-full mt-2 p-3 rounded-lg bg-white/30 text-white placeholder-white/80 focus:ring-2 focus:ring-white"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Masukkan email..."
@@ -60,10 +60,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="text-white font-semibold">Password</label>
+            <label className="text-black font-semibold">Password</label>
             <input
               type="password"
-              className="w-full mt-2 p-3 rounded-lg bg-white/30 text-white placeholder-white/80 focus:ring-2 focus:ring-white"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black placeholder-black/80 focus:ring-2 focus:ring-white"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Masukkan password..."
@@ -71,25 +71,25 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="text-white font-semibold">Role</label>
+            <label className="text-black font-semibold">Role</label>
             <select
-              className="w-full mt-2 p-3 rounded-lg bg-white/30 text-white focus:ring-2 focus:ring-white"
+              className="w-full mt-2 p-3 rounded-lg bg-black/30 text-black focus:ring-2 focus:ring-white"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
-              <option value="mahasiswa" className="text-black">Mahasiswa</option>
-              <option value="admin" className="text-black">Admin</option>
+              <option value="mahasiswa" className="text-white">Mahasiswa</option>
+              <option value="admin" className="text-white">Admin</option>
             </select>
           </div>
 
           {error && <p className="text-red-200 text-center">{error}</p>}
 
-          <button className="w-full py-3 bg-white text-indigo-700 font-bold rounded-xl shadow-lg hover:bg-indigo-100 transition">
+          <button className="w-full py-3 bg-white text-white-700 font-bold rounded-xl shadow-lg hover:bg-white-100 transition">
             Register
           </button>
         </form>
 
-        <p className="text-center text-white mt-6">
+        <p className="text-center text-black mt-6">
           Sudah punya akun? <a href="/login" className="underline">Login</a>
         </p>
 
