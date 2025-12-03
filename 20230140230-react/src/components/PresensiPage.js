@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 // Tentukan URL API secara terpusat
-const API_URL = "http://localhost:3000/api/presensi"; 
+const API_URL = "http://localhost:3001/api/presensi"; 
 
 export default function PresensiPage() {
   const [message, setMessage] = useState("");
