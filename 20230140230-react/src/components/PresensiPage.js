@@ -1,141 +1,142 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-// Tentukan URL API secara terpusat
-const API_URL = "http://localhost:3001/api/presensi"; 
-
-export default function PresensiPage() {
+function PresensiPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [coords, setCoords] = useState(null); // State untuk menyimpan koordinat
-  const [isLoading, setIsLoading] = useState(false);
-  const nav = useNavigate();
+  const [coords, setCoords] = useState(null);
+  const navigate = useNavigate();
 
-  // Fungsi utilitas untuk mendapatkan lokasi
-  const getGeolocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        return reject("Geolocation tidak didukung oleh browser ini.");
-      }
-      // Dapatkan posisi dengan timeout 10 detik dan presisi tinggi
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (err) => {
-          reject(`Gagal mendapatkan lokasi: ${err.message}. Mohon berikan izin.`);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    });
-  };
+  const handleCheckIn = async () => {
+    if (!coords) {
+      setError("Lokasi belum didapatkan. Mohon izinkan akses lokasi.");
+      return;
+    }
 
-  const handlePresensi = async (endpoint) => {
-    const token = localStorage.getItem("token");
-    if (!token) return nav("/login");
-
-    setIsLoading(true);
     setMessage("");
     setError("");
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
-      // 1. Dapatkan lokasi pengguna
-      const location = await getGeolocation();
-      
-      // 2. Kirim permintaan ke backend dengan data lokasi
       const res = await axios.post(
-        `${API_URL}/${endpoint}`,
+        "http://localhost:3001/api/presensi/check-in",
         {
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: coords.lat,
+          longitude: coords.lng,
         },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-
-      setMessage(res.data.message || `${endpoint.replace('-', ' ')} berhasil!`);
-      // Simpan koordinat yang berhasil untuk tampilan opsional
-      setCoords(location); 
-
+      setMessage(res.data.message);
     } catch (err) {
-      // Menangkap error dari getGeolocation ATAU dari axios
-      const errorMessage = err.response?.data?.message || err.message || `Gagal ${endpoint.replace('-', ' ')}`;
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      setError(err.response ? err.response.data.message : "Check-In gagal");
     }
   };
 
-  // Fungsi Check-In yang memanggil fungsi utama
-  const handleCheckIn = () => handlePresensi("check-in");
+  const handleCheckOut = async () => {
+    setMessage("");
+    setError("");
 
-  // Fungsi Check-Out yang memanggil fungsi utama
-  const handleCheckOut = () => handlePresensi("check-out");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        "http://localhost:3001/api/presensi/check-out",
+        {
+          latitude: coords?.lat,
+          longitude: coords?.lng,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setMessage(res.data.message);
+    } catch (err) {
+      setError(err.response ? err.response.data.message : "Check-Out gagal");
+    }
+  };
+
+  const getLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCoords({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          setError("Gagal mendapatkan lokasi: " + error.message);
+        }
+      );
+    } else {
+      setError("Geolocation tidak didukung oleh browser ini.");
+    }
+  };
+
+  useEffect(() => {
+    getLocation();
+  }, []);
+  
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Presensi</h1>
-      
-      {/* Tampilkan pesan loading saat mengambil lokasi atau mengirim data */}
-      {isLoading && <p style={styles.loading}>Memproses... Mohon tunggu dan berikan izin lokasi.</p>}
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">
+          Lakukan Presensi
+        </h2>
 
-      <div style={styles.buttonContainer}>
-        <button 
-          style={styles.button} 
-          onClick={handleCheckIn}
-          disabled={isLoading} // Nonaktifkan saat loading
-        >
-          Check-In
-        </button>
+        {message && <p className="text-blue-600 mb-4">{message}</p>}
+        {error && <p className="text-red-600 mb-4">{error}</p>}
 
-        <button 
-          style={{...styles.button, ...styles.checkoutButton}} 
-          onClick={handleCheckOut}
-          disabled={isLoading} // Nonaktifkan saat loading
-        >
-          Check-Out
-        </button>
+        {coords && (
+          <div className="my-4 border rounded-lg overflow-hidden">
+            <MapContainer center={[coords.lat, coords.lng]} zoom={15} style={{ height: '300px', width: '100%' }}>
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <Marker position={[coords.lat, coords.lng]}>
+                <Popup>Lokasi Presensi Anda</Popup>
+              </Marker>
+            </MapContainer>
+          </div>
+        )}
+
+        <div className="flex space-x-4">
+          <button
+            onClick={handleCheckIn}
+            className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700"
+          >
+            Check-In
+          </button>
+
+          <button
+            onClick={handleCheckOut}
+            className="w-full py-3 px-4 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700"
+          >
+            Check-Out
+          </button>
+        </div>
       </div>
-
-      {coords && (
-        <p style={styles.info}>
-          Lokasi terakhir berhasil didapatkan: Lat {coords.latitude.toFixed(6)}, Lng {coords.longitude.toFixed(6)}
-        </p>
-      )}
-
-      {message && <p style={styles.success}>{message}</p>}
-      {error && <p style={styles.error}>{error}</p>}
     </div>
   );
 }
 
-const styles = {
-  container: { textAlign: "center", marginTop: 70, padding: '0 20px' },
-  title: { fontSize: 32, marginBottom: 40, color: '#333' },
-  buttonContainer: { display: "flex", justifyContent: "center", gap: 30 },
-  button: {
-    width: 200,
-    height: 100,
-    fontSize: 22,
-    cursor: "pointer",
-    borderRadius: 10,
-    border: 'none',
-    fontWeight: 'bold',
-    transition: '0.3s',
-    backgroundColor: '#4CAF50', // Hijau untuk Check-In
-    color: 'white',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  },
-  checkoutButton: {
-    backgroundColor: '#f44336', // Merah untuk Check-Out
-  },
-  loading: { marginTop: 30, fontSize: 18, color: '#2196F3', fontWeight: 'bold' },
-  info: { marginTop: 15, fontSize: 14, color: '#666' },
-  success: { marginTop: 30, fontSize: 18, color: 'green', fontWeight: 'bold' },
-  error: { marginTop: 30, fontSize: 18, color: 'red', fontWeight: 'bold' },
-};
+export default PresensiPage;
