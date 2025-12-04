@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useMap } from "react-leaflet";
+
+function ChangeMapView({ coords }) {
+  const map = useMap();
+  map.setView([coords.lat, coords.lng], 15);
+  return null;
+}
 
 function PresensiPage() {
   const [message, setMessage] = useState("");
@@ -73,19 +80,24 @@ function PresensiPage() {
   };
 
   const getLocation = () => {
+    console.log("Mencoba mengambil lokasi...");
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log("Lokasi diterima:", position.coords);
           setCoords({
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
         },
         (error) => {
+          console.error("Geolocation Error:", error);
           setError("Gagal mendapatkan lokasi: " + error.message);
         }
       );
     } else {
+      console.error("Browser tidak mendukung geolocation");
       setError("Geolocation tidak didukung oleh browser ini.");
     }
   };
@@ -107,15 +119,22 @@ function PresensiPage() {
 
         {coords && (
           <div className="my-4 border rounded-lg overflow-hidden">
-            <MapContainer center={[coords.lat, coords.lng]} zoom={15} style={{ height: '300px', width: '100%' }}>
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-              />
-              <Marker position={[coords.lat, coords.lng]}>
-                <Popup>Lokasi Presensi Anda</Popup>
-              </Marker>
-            </MapContainer>
+            <MapContainer 
+  center={[coords.lat, coords.lng]} 
+  zoom={15} 
+  style={{ height: '300px', width: '100%' }}
+>
+  <ChangeMapView coords={coords} />
+
+  <TileLayer
+    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+  />
+
+  <Marker position={[coords.lat, coords.lng]}>
+    <Popup>Lokasi Presensi Anda</Popup>
+  </Marker>
+</MapContainer>
           </div>
         )}
 

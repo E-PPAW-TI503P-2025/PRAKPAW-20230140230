@@ -20,6 +20,7 @@ const CheckIn = async (req, res) => {
 
     const newRecord = await Presensi.create({
       userId: userId,
+	  nama: userName,
       checkIn: waktuSekarang,
       latitude: latitude,
       longitude: longitude,

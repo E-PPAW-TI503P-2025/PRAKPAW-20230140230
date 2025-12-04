@@ -19,25 +19,33 @@ module.exports = (sequelize, DataTypes) => {
 
   }
   Presensi.init({
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    nama: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    checkIn: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    checkOut: {
-      type: DataTypes.DATE,
-      allowNull: true, // Boleh null
-    }
-  }, {
-    sequelize,
-    modelName: 'Presensi',
-  });
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  nama: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  checkIn: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  checkOut: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  latitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  longitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  }
+}, {
+  sequelize,
+  modelName: 'Presensi',
+});
   return Presensi;
-};
+}
