@@ -42,10 +42,16 @@ module.exports = (sequelize, DataTypes) => {
   longitude: {
     type: DataTypes.FLOAT,
     allowNull: true,
+  },
+  buktiFoto: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 }, {
   sequelize,
   modelName: 'Presensi',
+  tableName: 'Presensis',
+  timestamps: false
 });
   return Presensi;
 }

@@ -1,160 +1,119 @@
-const { Presensi } = require("../models");
-const { format } = require("date-fns-tz");
-const timeZone = "Asia/Jakarta";
+const multer = require("multer");
+const path = require("path");
+const { Presensi, User } = require("../models");
 
-const CheckIn = async (req, res) => {
+// ==========================
+//  SETUP MULTER
+// ==========================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`
+    );
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Hanya file gambar yang diperbolehkan!"), false);
+  }
+};
+
+// 👉 INI YANG PENTING
+exports.upload = multer({ storage, fileFilter });
+
+// ==========================
+//     CHECK-IN
+// ==========================
+exports.checkIn = async (req, res) => {
   try {
-    const { id: userId, nama: userName } = req.user;
-    const waktuSekarang = new Date();
-    const { latitude, longitude } = req.body;
+    const { id: userId, nama } = req.user || {};
+    let { latitude, longitude } = req.body || {};
 
-    const existingRecord = await Presensi.findOne({
-      where: { userId: userId, checkOut: null },
-    });
+    const buktiFoto = req.file ? req.file.path : null;
 
-    if (existingRecord) {
-      return res
-        .status(400)
-        .json({ message: "Anda sudah melakukan check-in hari ini." });
+    // Ensure latitude/longitude are numbers if provided
+    if (latitude !== undefined) latitude = parseFloat(latitude);
+    if (longitude !== undefined) longitude = parseFloat(longitude);
+
+    // If token does not contain nama, read from DB as fallback
+    let finalNama = nama;
+    if (!finalNama) {
+      try {
+        const usr = await User.findByPk(userId);
+        finalNama = usr ? usr.nama : null;
+      } catch (e) {
+        console.error('Failed to fetch user for nama fallback', e && e.message ? e.message : e);
+        finalNama = null;
+      }
     }
 
+    // include nama because model requires it (allowNull: false)
     const newRecord = await Presensi.create({
-      userId: userId,
-	  nama: userName,
-      checkIn: waktuSekarang,
-      latitude: latitude,
-      longitude: longitude,
+      userId,
+      nama: finalNama,
+      checkIn: new Date(),
+      latitude,
+      longitude,
+      buktiFoto,
     });
-
-    const formattedData = {
-      userId: newRecord.userId,
-      checkIn: format(newRecord.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
-      checkOut: null,
-      latitude: newRecord.latitude,
-      longitude: newRecord.longitude,
-    };
 
     res.status(201).json({
-      message: `Halo ${userName}, check-in Anda berhasil pada pukul ${format(
-        waktuSekarang,
-        "HH:mm:ss",
-        { timeZone }
-      )} WIB`,
-      data: formattedData,
+      message: "Check-In berhasil",
+      data: newRecord,
     });
-  } catch (error) {
-    res.status(500).json({ message: "Terjadi kesalahan pada server", error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
 
-const CheckOut = async (req, res) => {
-  try {
-    const { id: userId, nama: userName } = req.user;
-    const waktuSekarang = new Date();
-    const { latitude, longitude } = req.body;
-
-    const recordToUpdate = await Presensi.findOne({
-      where: { userId: userId, checkOut: null },
-    });
-
-    if (!recordToUpdate) {
-      return res.status(404).json({
-        message: "Tidak ditemukan catatan check-in yang aktif untuk Anda.",
-      });
-    }
-
-    recordToUpdate.checkOut = waktuSekarang;
-    if (latitude) recordToUpdate.latitude = latitude;
-    if (longitude) recordToUpdate.longitude = longitude;
-    await recordToUpdate.save();
-
-    const formattedData = {
-      userId: recordToUpdate.userId,
-      checkIn: format(recordToUpdate.checkIn, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
-      checkOut: format(recordToUpdate.checkOut, "yyyy-MM-dd HH:mm:ssXXX", { timeZone }),
-      latitude: recordToUpdate.latitude,
-      longitude: recordToUpdate.longitude,
-    };
-
-    res.json({
-      message: `Selamat jalan ${userName}, check-out Anda berhasil pada pukul ${format(
-        waktuSekarang,
-        "HH:mm:ss",
-        { timeZone }
-      )} WIB`,
-      data: formattedData,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Terjadi kesalahan pada server", error: error.message });
-  }
-};
-
-const deletePresensi = async (req, res) => {
-  // Isi fungsi deletePresensi Anda
+// ==========================
+//     CHECK-OUT
+// ==========================
+exports.checkOut = async (req, res) => {
   try {
     const { id: userId } = req.user;
-    const presensiId = req.params.id;
-    const recordToDelete = await Presensi.findByPk(presensiId);
 
-    if (!recordToDelete) {
-      return res
-        .status(404)
-        .json({ message: "Catatan presensi tidak ditemukan." });
-    }
-    // Perbaikan: gunakan triple equals (===)
-    if (recordToDelete.userId !== userId) { 
-      return res
-        .status(403)
-        .json({ message: "Akses ditolak: Anda bukan pemilik catatan ini." });
-    }
-    await recordToDelete.destroy();
-    res.status(204).send();
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Terjadi kesalahan pada server", error: error.message });
-  }
-};
-
-const updatePresensi = async (req, res) => {
-  try {
-    const presensiId = req.params.id;
-    const { checkIn, checkOut, latitude, longitude } = req.body;
-
-    if (checkIn === undefined && checkOut === undefined && latitude === undefined && longitude === undefined) {
-      return res.status(400).json({
-        message:
-          "Request body tidak berisi data yang valid untuk diupdate (checkIn, checkOut, latitude, atau longitude).",
-      });
-    }
-    const recordToUpdate = await Presensi.findByPk(presensiId);
-    if (!recordToUpdate) {
-      return res
-        .status(404)
-        .json({ message: "Catatan presensi tidak ditemukan." });
-    }
-
-    recordToUpdate.checkIn = checkIn || recordToUpdate.checkIn;
-    recordToUpdate.checkOut = checkOut || recordToUpdate.checkOut;
-    recordToUpdate.latitude = latitude !== undefined ? latitude : recordToUpdate.latitude;
-    recordToUpdate.longitude = longitude !== undefined ? longitude : recordToUpdate.longitude;
-    await recordToUpdate.save();
-
-    res.json({
-      message: "Data presensi berhasil diperbarui.",
-      data: recordToUpdate,
+    const record = await Presensi.findOne({
+      where: { userId, checkOut: null },
     });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Terjadi kesalahan pada server", error: error.message });
+
+    if (!record) {
+      return res.status(404).json({ message: "Anda belum Check-In!" });
+    }
+
+    record.checkOut = new Date();
+    await record.save();
+
+    res.json({ message: "Check-Out berhasil!", data: record });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
 
-// EKSPOR SEMUA FUNGSI DI SATU TEMPAT
-module.exports = {
-    CheckIn,
-    CheckOut,
-    deletePresensi,
-    updatePresensi
+// ==========================
+// UPDATE & DELETE
+// ==========================
+exports.updatePresensi = async (req, res) => {
+  try {
+    await Presensi.update(req.body, { where: { id: req.params.id } });
+    res.json({ message: "Update berhasil" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.deletePresensi = async (req, res) => {
+  try {
+    await Presensi.destroy({ where: { id: req.params.id } });
+    res.json({ message: "Delete berhasil" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

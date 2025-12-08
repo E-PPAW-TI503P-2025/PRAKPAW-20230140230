@@ -1,161 +1,164 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Webcam from "react-webcam";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 
-function ChangeMapView({ coords }) {
-  const map = useMap();
-  map.setView([coords.lat, coords.lng], 15);
-  return null;
-}
+// Fix for missing marker icons in leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
-function PresensiPage() {
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+export default function PresensiPage() {
+
   const [coords, setCoords] = useState(null);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [image, setImage] = useState(null);
 
+  const webcamRef = useRef(null);
+
+  // ============================
+  //  AMBIL LOKASI OTOMATIS
+  // ============================
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      },
+      err => {
+        console.log("ERR GEO :", err);
+        setError("Izin lokasi ditolak. Aktifkan GPS.");
+      }
+    );
+  }, []);
+
+  // ============================
+  //  FOTO SELFIE
+  // ============================
+  const capture = useCallback(() => {
+    const img = webcamRef.current.getScreenshot();
+    setImage(img);
+  }, []);
+
+  // ============================
+  //  TOKEN GETTER
+  // ============================
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
+
+  // ============================
+  //  CHECK IN
+  // ============================
   const handleCheckIn = async () => {
-    if (!coords) {
-      setError("Lokasi belum didapatkan. Mohon izinkan akses lokasi.");
-      return;
-    }
-
-    setMessage("");
-    setError("");
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!coords) return setError("Lokasi belum terdeteksi!");
+    if (!image) return setError("Foto wajib diambil!");
 
     try {
+      const blob = await (await fetch(image)).blob();
+
+      let formData = new FormData();
+      formData.append("latitude", coords.lat);
+      formData.append("longitude", coords.lng);
+      formData.append("buktiFoto", blob, "selfie.jpg");
+
       const res = await axios.post(
         "http://localhost:3001/api/presensi/check-in",
-        {
-          latitude: coords.lat,
-          longitude: coords.lng,
-        },
+        formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "multipart/form-data"
+          }
         }
       );
+
       setMessage(res.data.message);
+      setImage(null);
     } catch (err) {
-      setError(err.response ? err.response.data.message : "Check-In gagal");
+      console.log("ERR CHECKIN:", err && err.response ? err.response.data : err);
+      const errorMsg = err.response?.data?.error || err.message || "Kesalahan pada server. Cek backend.";
+      setError(errorMsg);
     }
   };
 
   const handleCheckOut = async () => {
-    setMessage("");
-    setError("");
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
       const res = await axios.post(
         "http://localhost:3001/api/presensi/check-out",
-        {
-          latitude: coords?.lat,
-          longitude: coords?.lng,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` } }
       );
       setMessage(res.data.message);
     } catch (err) {
-      setError(err.response ? err.response.data.message : "Check-Out gagal");
+      console.log("ERR CHECKOUT:", err && err.response ? err.response.data : err);
+      const errorMsg = err.response?.data?.error || err.message || "Kesalahan pada server. Cek backend.";
+      setError(errorMsg);
     }
   };
-
-  const getLocation = () => {
-    console.log("Mencoba mengambil lokasi...");
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log("Lokasi diterima:", position.coords);
-          setCoords({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error("Geolocation Error:", error);
-          setError("Gagal mendapatkan lokasi: " + error.message);
-        }
-      );
-    } else {
-      console.error("Browser tidak mendukung geolocation");
-      setError("Geolocation tidak didukung oleh browser ini.");
-    }
-  };
-
-  useEffect(() => {
-    getLocation();
-  }, []);
-  
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">
-          Lakukan Presensi
-        </h2>
+    <div className="p-4" style={{ maxWidth: 900, margin: '0 auto' }}>
 
-        {message && <p className="text-blue-600 mb-4">{message}</p>}
-        {error && <p className="text-red-600 mb-4">{error}</p>}
+      <h1 style={{ textAlign: 'center', fontSize: 28, fontWeight: '700', marginBottom: 6 }}>Lakukan Presensi</h1>
+      {error && <p style={{ textAlign: 'center', color: '#e53e3e', marginBottom: 12 }}>{error}</p>}
 
-        {coords && (
-          <div className="my-4 border rounded-lg overflow-hidden">
-            <MapContainer 
-  center={[coords.lat, coords.lng]} 
-  zoom={15} 
-  style={{ height: '300px', width: '100%' }}
->
-  <ChangeMapView coords={coords} />
+      {/* MAP */}
+      <div className="mb-4" style={{ borderRadius: 8, overflow: 'hidden' }}>
+        <MapContainer
+          center={[coords ? coords.lat : -7.782, coords ? coords.lng : 110.367]}
+          zoom={coords ? 15 : 12}
+          style={{ height: '180px', width: '100%' }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {coords && (
+            <Marker position={[coords.lat, coords.lng]}>
+              <Popup>Lokasi Anda</Popup>
+            </Marker>
+          )}
+        </MapContainer>
+      </div>
 
-  <TileLayer
-    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-  />
-
-  <Marker position={[coords.lat, coords.lng]}>
-    <Popup>Lokasi Presensi Anda</Popup>
-  </Marker>
-</MapContainer>
-          </div>
-        )}
-
-        <div className="flex space-x-4">
-          <button
-            onClick={handleCheckIn}
-            className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700"
-          >
-            Check-In
-          </button>
-
-          <button
-            onClick={handleCheckOut}
-            className="w-full py-3 px-4 bg-red-600 text-white font-semibold rounded-md shadow-sm hover:bg-red-700"
-          >
-            Check-Out
-          </button>
+      {/* KAMERA */}
+      <div style={{ background: '#000', borderRadius: 8, padding: 18, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ width: 260, height: 160, borderRadius: 14, overflow: 'hidden', background: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {!image ? (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              className="w-full h-full object-cover"
+              videoConstraints={{ facingMode: "user" }}
+            />
+          ) : (
+            <img src={image} alt="Selfie" className="w-full h-full object-cover" />
+          )}
         </div>
       </div>
+
+      {/* BUTTON AMBIL FOTO */}
+      <div className="mb-3">
+        {!image ? (
+          <button onClick={capture} className="bg-gray-600 text-white px-4 py-3 rounded w-full">Foto Ulangi 🔄</button>
+        ) : (
+          <button onClick={() => setImage(null)} className="bg-gray-600 text-white px-4 py-3 rounded w-full">Foto Ulangi 🔄</button>
+        )}
+      </div>
+
+      {/* BUTTONS CHECK IN / CHECK OUT */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={handleCheckIn} className="bg-blue-600 text-white px-4 py-3 rounded flex-1">Check-In</button>
+        <button onClick={handleCheckOut} className="bg-red-600 text-white px-4 py-3 rounded flex-1">Check-Out</button>
+      </div>
+
+      {message && <p className="text-green-600 mt-2" style={{ textAlign: 'center' }}>{message}</p>}
     </div>
   );
 }
-
-export default PresensiPage;
