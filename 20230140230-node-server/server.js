@@ -9,8 +9,10 @@ const path = require('path');
 const presensiRoutes = require("./routes/presensi");
 const reportRoutes = require("./routes/reports");
 const authRoutes = require('./routes/auth');
+const iotRoutes = require("./routes/iot");
 
 // Middleware - CORS dan JSON parser HARUS di awal
+app.use("/api/iot", iotRoutes);
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
